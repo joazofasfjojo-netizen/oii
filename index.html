@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Braziscord - Oficial</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #313338;
+            color: #dbdee1;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Tela de Autenticação / Registo */
+        #auth-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .auth-box {
+            background-color: #313338;
+            padding: 30px;
+            border-radius: 8px;
+            width: 420px;
+            text-align: center;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        }
+        .auth-box h2 { color: white; margin-bottom: 10px; }
+        .auth-box p { color: #949ba4; font-size: 14px; margin-bottom: 20px; }
+        .auth-box input {
+            width: 100%;
+            padding: 12px;
+            background-color: #1e1f22;
+            border: 2px solid transparent;
+            border-radius: 4px;
+            color: white;
+            font-size: 15px;
+            margin-bottom: 15px;
+            outline: none;
+            transition: 0.2s;
+        }
+        .auth-box input:focus { border-color: #5865f2; }
+        .auth-box button {
+            width: 100%;
+            padding: 12px;
+            background-color: #5865f2;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 5px;
+        }
+        .auth-box button:hover { background-color: #4752c4; }
+        .auth-toggle {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #949ba4;
+        }
+        .auth-toggle span {
+            color: #00a8fc;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .auth-toggle span:hover { text-decoration: underline; }
+
+        /* Layout Principal */
+        .app-container {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            display: none;
+        }
+
+        .servers-sidebar {
+            width: 72px;
+            background-color: #1e1f22;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 12px;
+            gap: 8px;
+        }
+        .server-icon {
+            width: 48px;
+            height: 48px;
+            background-color: #2b2d31;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .server-icon:hover, .server-icon.active {
+            border-radius: 16px;
+            background-color: #5865f2;
+        }
+        .server-icon.home-btn {
+            background-color: #5865f2;
+            color: white;
+        }
+        .server-icon.add-btn {
+            background-color: #2b2d31;
+            color: #23a55a;
+            font-size: 24px;
+        }
+        .server-icon.add-btn:hover {
+            background-color: #23a55a;
+            color: white;
+            border-radius: 16px;
+        }
+
+        .channels-sidebar {
+            width: 240px;
+            background-color: #2b2d31;
+            display: flex;
+            flex-direction: column;
+        }
+        .server-header {
+            height: 48px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            color: white;
+            border-bottom: 2px solid #1f2023;
+        }
+        .channel-list {
+            padding: 8px;
+            flex: 1;
+            overflow-y: auto;
+        }
+        .channel-item {
+            padding: 8px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 2px;
+            color: #949ba4;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .channel-item:hover, .channel-item.active {
+            background-color: #35373c;
+            color: white;
+        }
+
+        .chat-area {
+            flex: 1;
+            background-color: #313338;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-header {
+            height: 48px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            border-bottom: 2px solid #1f2023;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            gap: 10px;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .message {
+            display: flex;
+            gap: 16px;
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            background-color: #5865f2;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: white;
+            flex-shrink: 0;
+        }
+        .message-content h4 {
+            margin: 0 0 4px 0;
+            font-size: 15px;
+            color: white;
+        }
+        .message-content p {
+            margin: 0;
+            font-size: 14px;
+            color: #dbdee1;
+            word-break: break-all;
+        }
+        .chat-input-area {
+            padding: 0 16px 24px 16px;
+        }
+        .chat-input {
+            width: 100%;
+            background-color: #383a40;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: white;
+            font-size: 15px;
+            outline: none;
+        }
+        .friends-container {
+            padding: 24px;
+            flex: 1;
+            background-color: #313338;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .friends-container h2 { color: white; margin-top: 0; }
+        .members-sidebar {
+            width: 240px;
+            background-color: #2b2d31;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .member-category {
+            font-size: 12px;
+            font-weight: bold;
+            color: #949ba4;
+            text-transform: uppercase;
+        }
+        .member-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 4px;
+            border-radius: 4px;
+        }
+        .member-avatar {
+            width: 32px;
+            height: 32px;
+            background-color: #eb459e;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+        .member-name { font-size: 14px; }
+        .btn-action {
+            background-color: #23a55a;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-action:hover { background-color: #1f8d4e; }
+    </style>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, set, get, push, onChildAdded, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            databaseURL: "https://brazisord-chat-default-rtdb.firebaseio.com/"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        
+        let usuarioAtual = null;
+        let chatAtivoId = "geral_Braziscord";
+        window.modoAtual = 'registrar';
+
+        window.alternarModoAuth = function(modo) {
+            let titulo = document.getElementById('auth-titulo');
+            let sub = document.getElementById('auth-sub');
+            let campoNome = document.getElementById('inputNome');
+            let btnSubmit = document.getElementById('btnSubmitAuth');
+            let toggleText = document.getElementById('authToggleText');
+
+            if (modo === 'registrar') {
+                titulo.innerText = "Cadastrar Braziscord";
+                sub.innerText = "Cria a tua conta oficial!";
+                campoNome.style.display = "block";
+                btnSubmit.innerText = "Continuar";
+                toggleText.innerHTML = 'Já tens uma conta? <span onclick="alternarModoAuth(\'login\')">Entrar</span>';
+                window.modoAtual = 'registrar';
+            } else {
+                titulo.innerText = "Boas-vindas de volta!";
+                sub.innerText = "Entra na tua conta!";
+                campoNome.style.display = "none";
+                btnSubmit.innerText = "Entrar";
+                toggleText.innerHTML = 'Precisas de uma conta? <span onclick="alternarModoAuth(\'registrar\')">Regista-te</span>';
+                window.modoAtual = 'login';
+            }
+        };
+
+        window.processarAuth = async function() {
+            let email = document.getElementById('inputEmail').value.trim();
+            let senha = document.getElementById('inputSenha').value.trim();
+            let nome = document.getElementById('inputNome').value.trim();
+
+            if (email === "" || senha === "") {
+                alert("Preenche o e-mail e a senha!");
+                return;
+            }
+
+            // Validação de 3 a 10 caracteres para a senha
+            if (senha.length < 3 || senha.length > 10) {
+                alert("A senha tem de ter entre 3 e 10 caracteres!");
+                return;
+            }
+
+            try {
+                if (window.modoAtual === 'registrar') {
+                    if (nome === "") {
+                        alert("Escolhe um nome de utilizador!");
+                        return;
+                    }
+                    // Validação de 3 a 10 caracteres para o nome
+                    if (nome.length < 3 || nome.length > 10) {
+                        alert("O nome de utilizador tem de ter entre 3 e 10 caracteres!");
+                        return;
+                    }
+
+                    let userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+                    let uid = userCredential.user.uid;
+
+                    await set(ref(db, 'usuarios/' + uid), { nome: nome, email: email });
+                    usuarioAtual = { uid: uid, nome: nome };
+                    iniciarSessaoApp();
+                } else {
+                    let userCredential = await signInWithEmailAndPassword(auth, email, senha);
+                    let uid = userCredential.user.uid;
+
+                    let snapshot = await get(ref(db, 'usuarios/' + uid));
+                    if (snapshot.exists()) {
+                        usuarioAtual = { uid: uid, nome: snapshot.val().nome };
+                    } else {
+                        usuarioAtual = { uid: uid, nome: email.split('@')[0] };
+                    }
+                    iniciarSessaoApp();
+                }
+            } catch (error) {
+                alert("Erro na autenticação: " + error.message);
+            }
+        };
+
+        function iniciarSessaoApp() {
+            document.getElementById('auth-modal').style.display = 'none';
+            document.getElementById('app-container').style.display = 'flex';
+            document.getElementById('spanUsuario').innerText = usuarioAtual.nome;
+            document.getElementById('avatarMembro').innerText = usuarioAtual.nome.charAt(0).toUpperCase();
+            escutarMensagens();
+            escutarAmigos();
+        }
+
+        window.mudarAba = function(tipo, serverNome = "Braziscord") {
+            let areaChat = document.getElementById('areaChatPrincipal');
+            let areaAmigos = document.getElementById('areaAmigosPrincipal');
+            
+            if (tipo === 'home') {
+                areaChat.style.display = 'none';
+                areaAmigos.style.display = 'flex';
+                document.getElementById('headerTitulo').innerText = "Amigos e Solicitações";
+            } else {
+                areaAmigos.style.display = 'none';
+                areaChat.style.display = 'flex';
+                document.getElementById('headerTitulo').innerText = "# " + serverNome;
+                chatAtivoId = "geral_" + serverNome;
+                escutarMensagens();
+            }
+        };
+
+        window.enviarMensagem = function(event) {
+            if (event.key === 'Enter') {
+                let input = document.getElementById('inputMensagem');
+                let texto = input.value.trim();
+
+                if (texto !== '') {
+                    let mensagemRef = ref(db, 'chats/' + chatAtivoId);
+                    push(mensagemRef, {
+                        autor: usuarioAtual.nome,
+                        texto: texto,
+                        hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    });
+                    input.value = '';
+                }
+            }
+        };
+
+        function escutarMensagens() {
+            let chatRef = ref(db, 'chats/' + chatAtivoId);
+            let areaMensagens = document.getElementById('mensagens');
+            areaMensagens.innerHTML = "";
+
+            onChildAdded(chatRef, (data) => {
+                let msg = data.val();
+                let novaMsg = document.createElement('div');
+                novaMsg.className = 'message';
+                novaMsg.innerHTML = `
+                    <div class="avatar">${msg.autor.charAt(0).toUpperCase()}</div>
+                    <div class="message-content">
+                        <h4>${msg.autor} <span style="font-size: 11px; color: #949ba4;">${msg.hora}</span></h4>
+                        <p>${msg.texto}</p>
+                    </div>
+                `;
+                areaMensagens.appendChild(novaMsg);
+                areaMensagens.scrollTop = areaMensagens.scrollHeight;
+            });
+        }
+
+        window.enviarPedidoAmizade = async function() {
+            let nomeAlvo = document.getElementById('inputNomeAmigo').value.trim();
+
+            if (nomeAlvo === "") {
+                alert("Introduz o nome do utilizador.");
+                return;
+            }
+            if (nomeAlvo === usuarioAtual.nome) {
+                alert("Não podes adicionar-te a ti próprio!");
+                return;
+            }
+
+            let usuariosRef = ref(db, 'usuarios');
+            let snapshot = await get(usuariosRef);
+            let encontrado = false;
+
+            if (snapshot.exists()) {
+                snapshot.forEach((child) => {
+                    if (child.val().nome === nomeAlvo) {
+                        encontrado = true;
+                    }
+                });
+            }
+
+            if (!encontrado) {
+                alert("Este utilizador não existe ou não tem conta no Braziscord!");
+                return;
+            }
+
+            push(ref(db, 'pedidosAmizade'), {
+                remetente: usuarioAtual.nome,
+                destinatario: nomeAlvo,
+                status: "pendente"
+            });
+
+            alert("Pedido enviado para " + nomeAlvo + "!");
+            document.getElementById('inputNomeAmigo').value = "";
+        };
+
+        function escutarAmigos() {
+            let pedidosRef = ref(db, 'pedidosAmizade');
+            let divSolicitacoes = document.getElementById('listaSolicitacoes');
+            let divAmigosAtivos = document.getElementById('listaAmigosAtivos');
+
+            onChildAdded(pedidosRef, (snapshot) => {
+                let pedidoKey = snapshot.key;
+                let dados = snapshot.val();
+
+                if (dados.destinatario === usuarioAtual.nome && dados.status === "pendente") {
+                    let item = document.createElement('div');
+                    item.style.cssText = "background-color: #1e1f22; padding: 10px; border-radius: 4px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center;";
+                    item.innerHTML = `
+                        <span><b>${dados.remetente}</b> enviou-te um pedido.</span>
+                        <button class="btn-action" onclick="aceitarPedido('${pedidoKey}', '${dados.remetente}')">Aceitar</button>
+                    `;
+                    divSolicitacoes.appendChild(item);
+                }
+
+                if ((dados.destinatario === usuarioAtual.nome || dados.remetente === usuarioAtual.nome) && dados.status === "aceite") {
+                    let amigoNome = (dados.destinatario === usuarioAtual.nome) ? dados.remetente : dados.destinatario;
+                    
+                    if (!document.getElementById('amigo_' + amigoNome)) {
+                        let amigoItem = document.createElement('div');
+                        amigoItem.id = 'amigo_' + amigoNome;
+                        amigoItem.className = 'channel-item';
+                        amigoItem.innerHTML = `<span>💬 ${amigoNome}</span>`;
+                        amigoItem.onclick = function() {
+                            abrirChatPrivado(amigoNome);
+                        };
+                        divAmigosAtivos.appendChild(amigoItem);
+                    }
+                }
+            });
+        }
+
+        window.aceitarPedido = async function(pedidoKey, remetente) {
+            await update(ref(db, 'pedidosAmizade/' + pedidoKey), { status: "aceite" });
+            alert("Agora tu e " + remetente são amigos!");
+            location.reload();
+        }
+
+        function abrirChatPrivado(amigoNome) {
+            document.getElementById('areaAmigosPrincipal').style.display = 'none';
+            document.getElementById('areaChatPrincipal').style.display = 'flex';
+            document.getElementById('headerTitulo').innerText = "DM com " + amigoNome;
+            
+            let ids = [usuarioAtual.nome, amigoNome].sort();
+            chatAtivoId = "dm_" + ids[0] + "_" + ids[1];
+            escutarMensagens();
+        }
+
+        window.criarServidor = function() {
+            let nomeServidor = prompt("Escolhe o nome do teu novo Servidor:");
+            if (nomeServidor && nomeServidor.trim() !== "") {
+                let listaServidores = document.getElementById('listaServidores');
+                let novoIcone = document.createElement('div');
+                novoIcone.className = 'server-icon';
+                novoIcone.innerText = nomeServidor.charAt(0).toUpperCase();
+                novoIcone.title = nomeServidor;
+                novoIcone.onclick = function() {
+                    document.querySelectorAll('.server-icon').forEach(el => el.classList.remove('active'));
+                    novoIcone.classList.add('active');
+                    window.mudarAba('servidor', nomeServidor);
+                };
+                listaServidores.insertBefore(novoIcone, listaServidores.lastElementChild);
+                alert("Servidor " + nomeServidor + " criado com sucesso!");
+            }
+        };
+    </script>
+</head>
+<body>
+
+    <!-- Tela de Autenticação Real -->
+    <div id="auth-modal">
+        <div class="auth-box">
+            <h2 id="auth-titulo">Cadastrar Braziscord</h2>
+            <p id="auth-sub">Cria a tua conta oficial!</p>
+            
+            <input type="email" id="inputEmail" placeholder="E-MAIL REAL (ex: nome@gmail.com)">
+            <input type="text" id="inputNome" maxlength="10" placeholder="NOME (3 a 10 letras)">
+            <input type="password" id="inputSenha" maxlength="10" placeholder="SENHA (3 a 10 caracteres)" onkeydown="if(event.key==='Enter') processarAuth()">
+            
+            <button id="btnSubmitAuth" onclick="processarAuth()">Continuar</button>
+            
+            <div class="auth-toggle" id="authToggleText">
+                Já tens uma conta? <span onclick="alternarModoAuth('login')">Entrar</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aplicação Principal -->
+    <div class="app-container" id="app-container">
+        <!-- 1. Servidores -->
+        <div class="servers-sidebar" id="listaServidores">
+            <div class="server-icon home-btn" title="Início / Amigos" onclick="mudarAba('home')">💬</div>
+            <div style="width: 32px; height: 2px; background-color: #35373c; border-radius: 1px; margin: 4px 0;"></div>
+            <div class="server-icon active" title="Braziscord Oficial" onclick="window.mudarAba('servidor', 'Braziscord'); document.querySelectorAll('.server-icon').forEach(el => el.classList.remove('active')); this.classList.add('active');">B</div>
+            <div class="server-icon add-btn" title="Criar Servidor" onclick="criarServidor()">+</div>
+        </div>
+
+        <!-- 2. Canais -->
+        <div class="channels-sidebar">
+            <div class="server-header" id="tituloServidor">Braziscord</div>
+            <div class="channel-list">
+                <div style="font-size: 12px; color: #949ba4; margin-bottom: 8px; font-weight: bold;">DIRECT MESSAGES</div>
+                <div class="channel-item" onclick="mudarAba('home')">
+                    <span>👥 Amigos e Pedidos</span>
+                </div>
+                
+                <div style="font-size: 12px; color: #949ba4; margin: 10px 0 4px 0; font-weight: bold;">AMIGOS ADICIONADOS</div>
+                <div id="listaAmigosAtivos"></div>
+
+                <div style="font-size: 12px; color: #949ba4; margin: 16px 0 8px 0; font-weight: bold;">CANAIS DE TEXTO</div>
+                <div class="channel-item active" onclick="mudarAba('servidor', 'Braziscord')"># geral</div>
+            </div>
+        </div>
+
+        <!-- 3. Área Principal -->
+        <div class="chat-area">
+            <div class="chat-header" id="headerTitulo"># Braziscord</div>
+            
+            <!-- Visão de Chat -->
+            <div id="areaChatPrincipal" style="display: flex; flex-direction: column; flex: 1; height: 100%;">
+                <div class="chat-messages" id="mensagens"></div>
+                <div class="chat-input-area">
+                    <input type="text" class="chat-input" id="inputMensagem" placeholder="Enviar mensagem (Aperte Enter)" onkeydown="enviarMensagem(event)">
+                </div>
+            </div>
+
+            <!-- Visão da Aba de Amigos -->
+            <div id="areaAmigosPrincipal" class="friends-container" style="display: none;">
+                <h2>Painel de Amigos</h2>
+                <p style="color: #949ba4;">Adiciona utilizadores reais pelo nome. Quando aceitarem, aparecem na tua lista lateral para conversarem em privado!</p>
+                
+                <div style="background-color: #2b2d31; padding: 16px; border-radius: 8px;">
+                    <h3 style="margin-top: 0; color: white;">Adicionar Amigo</h3>
+                    <input type="text" id="inputNomeAmigo" placeholder="Nome exato do utilizador..." style="width: 100%; padding: 10px; background-color: #1e1f22; border: none; border-radius: 4px; color: white; outline: none; margin-bottom: 10px;">
+                    <button onclick="enviarPedidoAmizade()" style="background-color: #5865f2; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer;">Enviar Pedido de Amizade</button>
+                </div>
+
+                <div>
+                    <h3 style="color: white; font-size: 16px;">Solicitações de Amizade Pendentes</h3>
+                    <div id="listaSolicitacoes"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Membros -->
+        <div class="members-sidebar">
+            <div class="member-category">Você</div>
+            <div class="member-item">
+                <div class="member-avatar" id="avatarMembro">U</div>
+                <div class="member-name" style="color: #5865f2;" id="spanUsuario">Convidado</div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
